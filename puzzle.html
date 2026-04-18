@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼图小游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: white;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: flex-end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group.no-label {
+            justify-content: flex-end;
+        }
+
+        label {
+            font-weight: bold;
+            color: #333;
+            font-size: 14px;
+        }
+
+        input[type="file"], .radio-group {
+            padding: 10px 12px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            height: 46px;
+            box-sizing: border-box;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .radio-group input[type="radio"] {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        select, button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            height: 46px;
+            box-sizing: border-box;
+        }
+
+        select {
+            background: #f0f0f0;
+            border: 2px solid #667eea;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .timer {
+            color: #667eea;
+        }
+
+        .puzzle-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .puzzle-grid {
+            display: grid;
+            gap: 2px;
+            background: #333;
+            padding: 2px;
+            border-radius: 8px;
+        }
+
+        .puzzle-piece {
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .puzzle-piece:hover {
+            transform: scale(1.02);
+            z-index: 10;
+        }
+
+        .puzzle-piece.selected {
+            border: 3px solid #ff6b6b;
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.6);
+            z-index: 10;
+        }
+
+        .puzzle-piece.correct {
+            border: 3px solid #51cf66;
+            box-shadow: 0 0 15px rgba(81, 207, 102, 0.6);
+        }
+
+        .preview-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .preview-img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .share-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .share-card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .share-card .info {
+            margin: 15px 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .share-card .result-img {
+            max-width: 300px;
+            max-height: 300px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .share-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .share-buttons button {
+            flex: 1;
+        }
+
+        .download-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧩 拼图小游戏</h1>
+    
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label>图片来源</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="imageSource" value="auto" checked> 自动</label>
+                    <label><input type="radio" name="imageSource" value="upload"> 上传</label>
+                </div>
+            </div>
+            <div class="control-group" id="uploadGroup" style="display: none;">
+                <label>上传图片</label>
+                <input type="file" id="imageInput" accept="image/*">
+            </div>
+            <div class="control-group">
+                <label>选择难度</label>
+                <select id="difficulty">
+                    <option value="3x4">3×4</option>
+                    <option value="3x5">3×5</option>
+                    <option value="4x4">4×4</option>
+                    <option value="4x5">4×5</option>
+                    <option value="4x6">4×6</option>
+                    <option value="5x5">5×5</option>
+                    <option value="5x6">5×6</option>
+                    <option value="6x6">6×6</option>
+                </select>
+            </div>
+            <div class="control-group no-label">
+                <button id="startBtn">开始游戏</button>
+            </div>
+        </div>
+
+        <div class="preview-container" id="previewContainer" style="display: none;">
+            <p>原图预览：</p>
+            <img id="previewImg" class="preview-img">
+        </div>
+
+        <div class="game-info" id="gameInfo" style="display: none;">
+            <div>难度: <span id="currentDifficulty"></span></div>
+            <div class="timer">时间: <span id="timer">00:00</span></div>
+        </div>
+
+        <div class="puzzle-container">
+            <div class="puzzle-grid" id="puzzleGrid"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="share-card">
+            <h2>🎉 恭喜完成拼图！</h2>
+            <div class="info">难度: <span id="shareDifficulty"></span></div>
+            <div class="info">完成时间: <span id="shareTime"></span></div>
+            <img id="shareImg" class="result-img">
+            <div class="share-buttons">
+                <button id="downloadImgBtn">保存图片</button>
+                <button id="restartBtn">再来一局</button>
+            </div>
+            <p class="download-hint">保存图片后可分享至微信</p>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        var image = null;
+        var rows = 3;
+        var cols = 4;
+        var pieces = [];
+        var selectedPiece = null;
+        var timerInterval = null;
+        var seconds = 0;
+        var gameStarted = false;
+        var correctCount = 0;
+        var imageSrc = '';
+
+        // 初始化函数 - 在页面加载完成后调用
+        function init() {
+            var imageInput = document.getElementById('imageInput');
+            var difficultySelect = document.getElementById('difficulty');
+            var startBtn = document.getElementById('startBtn');
+            var previewContainer = document.getElementById('previewContainer');
+            var previewImg = document.getElementById('previewImg');
+            var gameInfo = document.getElementById('gameInfo');
+            var currentDifficulty = document.getElementById('currentDifficulty');
+            var timerElement = document.getElementById('timer');
+            var puzzleGrid = document.getElementById('puzzleGrid');
+            var modal = document.getElementById('modal');
+            var shareDifficulty = document.getElementById('shareDifficulty');
+            var shareTime = document.getElementById('shareTime');
+            var shareImg = document.getElementById('shareImg');
+            var downloadImgBtn = document.getElementById('downloadImgBtn');
+            var restartBtn = document.getElementById('restartBtn');
+            var uploadGroup = document.getElementById('uploadGroup');
+            var imageSourceRadios = document.getElementsByName('imageSource');
+
+            // 图片来源切换
+            imageSourceRadios.forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    if (imageSourceRadios[1].checked) {
+                        uploadGroup.style.display = 'flex';
+                    } else {
+                        uploadGroup.style.display = 'none';
+                    }
+                });
+            });
+
+            // 上传图片处理
+            imageInput.addEventListener('change', function(e) {
+                var file = e.target.files[0];
+                if (file) {
+                    var reader = new FileReader();
+                    reader.onload = function(event) {
+                        var img = new Image();
+                        img.onload = function() {
+                            image = img;
+                            imageSrc = event.target.result;
+                            previewImg.src = imageSrc;
+                            previewContainer.style.display = 'block';
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // 难度选择
+            difficultySelect.addEventListener('change', function() {
+                var parts = difficultySelect.value.split('x');
+                rows = parseInt(parts[0]);
+                cols = parseInt(parts[1]);
+            });
+
+            // 开始游戏按钮点击
+            startBtn.addEventListener('click', function() {
+                if (imageSourceRadios[0].checked) {
+                    generateRandomImage(startGameWithImage);
+                } else if (!image) {
+                    alert('请先上传一张图片！');
+                } else {
+                    startGameWithImage();
+                }
+            });
+
+            // 生成本地哪吒/太乙真人风格动漫图
+            function generateLocalImage(callback) {
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                canvas.width = 600;
+                canvas.height = 600;
+
+                var isNezha = Math.random() > 0.5;
+                
+                if (isNezha) {
+                    var bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                    bgGrad.addColorStop(0, '#87CEEB');
+                    bgGrad.addColorStop(0.4, '#E0F6FF');
+                    bgGrad.addColorStop(1, '#90EE90');
+                    ctx.fillStyle = bgGrad;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+                    ctx.beginPath();
+                    ctx.ellipse(100, 520, 90, 55, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(500, 500, 100, 60, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#2c1810';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 180, 105, 95, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#2c1810';
+                    ctx.beginPath();
+                    ctx.arc(200, 135, 48, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(400, 135, 48, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#c41e3a';
+                    ctx.beginPath();
+                    ctx.ellipse(200, 128, 38, 16, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(400, 128, 38, 16, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#c41e3a';
+                    ctx.beginPath();
+                    ctx.moveTo(165, 120);
+                    ctx.quadraticCurveTo(145, 85, 115, 145);
+                    ctx.quadraticCurveTo(140, 155, 165, 145);
+                    ctx.lineTo(165, 120);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(435, 120);
+                    ctx.quadraticCurveTo(455, 85, 485, 145);
+                    ctx.quadraticCurveTo(460, 155, 435, 145);
+                    ctx.lineTo(435, 120);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ffe4c4';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 245, 98, 108, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#c41e3a';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 158, 80, 38, 0, 0, Math.PI);
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#c41e3a';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(225, 158);
+                    ctx.quadraticCurveTo(260, 178, 300, 158);
+                    ctx.quadraticCurveTo(340, 178, 375, 158);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#b01836';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 173, 26, 19, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#2c1810';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(235, 188);
+                    ctx.quadraticCurveTo(265, 208, 285, 193);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(315, 193);
+                    ctx.quadraticCurveTo(335, 208, 365, 188);
+                    ctx.stroke();
+
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.ellipse(258, 242, 30, 34, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(342, 242, 30, 34, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#4a2c2a';
+                    ctx.beginPath();
+                    ctx.ellipse(258, 245, 17, 21, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(342, 245, 17, 21, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(263, 238, 7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(347, 238, 7, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ffb088';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 288, 20, 15, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#e09b70';
+                    ctx.beginPath();
+                    ctx.ellipse(252, 303, 17, 9, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(348, 303, 17, 9, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#b01836';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(300, 322, 36, 0.1 * Math.PI, 0.9 * Math.PI);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#b01836';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 385, 78, 52, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#f4d03f';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 385, 72, 16, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#3a3a3a';
+                    ctx.beginPath();
+                    ctx.ellipse(212, 445, 58, 73, 0.1, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(388, 445, 58, 73, -0.1, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#c41e3a';
+                    ctx.beginPath();
+                    ctx.ellipse(212, 505, 48, 27, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(388, 505, 48, 27, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#f4d03f';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 358, 32, 9, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(212, 418, 17, 11, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(388, 418, 17, 11, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    var bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                    bgGrad.addColorStop(0, '#F5DEB3');
+                    bgGrad.addColorStop(0.5, '#FFEFD5');
+                    bgGrad.addColorStop(1, '#FAEBD7');
+                    ctx.fillStyle = bgGrad;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+                    ctx.beginPath();
+                    ctx.ellipse(100, 560, 110, 65, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(500, 540, 120, 70, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ffe4c4';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 375, 155, 175, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#87CEEB';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 415, 148, 143, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ffe4c4';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 375, 82, 62, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.ellipse(158, 375, 27, 72, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(442, 375, 27, 72, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ffe4c4';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 195, 123, 112, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#2c2c2c';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 118, 92, 52, 0, Math.PI, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#f4d03f';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 108, 37, 32, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#e67e22';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 103, 22, 17, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#f4d03f';
+                    ctx.beginPath();
+                    ctx.arc(300, 82, 16, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#2c3e50';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(228, 123);
+                    ctx.quadraticCurveTo(248, 108, 268, 123);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(332, 123);
+                    ctx.quadraticCurveTo(352, 108, 372, 123);
+                    ctx.stroke();
+
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.ellipse(248, 188, 34, 37, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(352, 188, 34, 37, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.beginPath();
+                    ctx.ellipse(250, 190, 16, 19, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(350, 190, 16, 19, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(253, 183, 5.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(351, 183, 5.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#f8b195';
+                    ctx.beginPath();
+                    ctx.ellipse(198, 228, 27, 19, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(402, 228, 27, 19, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ffb088';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 233, 27, 19, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#6d4c41';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(268, 258);
+                    ctx.quadraticCurveTo(300, 283, 332, 258);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#6d4c41';
+                    ctx.beginPath();
+                    ctx.moveTo(300, 273);
+                    ctx.lineTo(292, 293);
+                    ctx.lineTo(300, 288);
+                    ctx.lineTo(308, 293);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.fillStyle = '#f39c12';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 328, 42, 13, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#87CEEB';
+                    ctx.beginPath();
+                    ctx.ellipse(128, 448, 52, 82, -0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(472, 448, 52, 82, 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 8;
+                    ctx.beginPath();
+                    ctx.moveTo(153, 298);
+                    ctx.quadraticCurveTo(300, 348, 447, 298);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#c41e3a';
+                    ctx.beginPath();
+                    ctx.ellipse(153, 298, 16, 13, -0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(447, 298, 16, 13, 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.fillStyle = 'rgba(255,255,255,0.92)';
+                ctx.fillRect(25, 25, 550, 65);
+                ctx.fillStyle = '#d63031';
+                ctx.font = 'bold 28px Microsoft YaHei, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('拼图挑战 - ' + (isNezha ? '哪吒降世' : '太乙真人'), 300, 70);
+
+                var img = new Image();
+                img.onload = function() {
+                    image = img;
+                    imageSrc = img.src;
+                    previewImg.src = imageSrc;
+                    previewContainer.style.display = 'block';
+                    if (callback) callback();
+                };
+                img.src = canvas.toDataURL('image/png');
+            }
+
+            // 生成随机图片 - 优先网络，失败则本地
+            function generateRandomImage(callback) {
+                var randomId = Math.floor(Math.random() * 10000);
+                var img = new Image();
+                img.crossOrigin = 'anonymous';
+                var timeout = null;
+                var tried = false;
+                var sourceIndex = 0;
+                
+                var unsplashIds = [
+                    '1506905925346-21bda4d32df4',
+                    '1470071459604-3b5ec3a7fe05',
+                    '1447752875215-b2761acb3c5d',
+                    '1464822759023-fed622ff2c3b',
+                    '1507525428060-92c43466da0f',
+                    '1441974231531-c6227db76b6e',
+                    '1501785888041-af3ef281b307',
+                    '1472214103451-18f954e99124',
+                    '1426604966848-d7adac402bff',
+                    '1475914692453-87e6005e16ae'
+                ];
+                
+                var selectedUnsplash = unsplashIds[Math.floor(Math.random() * unsplashIds.length)];
+                
+                var imageSources = [
+                    'https://picsum.photos/seed/' + randomId + '/600/600',
+                    'https://picsum.photos/600/600?random=' + randomId,
+                    'https://picsum.photos/seed/' + (randomId + 1) + '/600/600',
+                    'https://images.unsplash.com/photo-' + selectedUnsplash + '?w=600&h=600&fit=crop'
+                ];
+
+                function tryNextSource() {
+                    if (sourceIndex < imageSources.length) {
+                        var src = imageSources[sourceIndex];
+                        sourceIndex++;
+                        img.src = src;
+                        timeout = setTimeout(loadFailed, 3000);
+                    } else {
+                        generateLocalImage(callback);
+                    }
+                }
+
+                function loadFailed() {
+                    if (!tried) {
+                        if (timeout) clearTimeout(timeout);
+                        tryNextSource();
+                    }
+                }
+
+                img.onload = function() {
+                    if (!tried) {
+                        tried = true;
+                        if (timeout) clearTimeout(timeout);
+                        image = img;
+                        imageSrc = img.src;
+                        previewImg.src = imageSrc;
+                        previewContainer.style.display = 'block';
+                        if (callback) callback();
+                    }
+                };
+
+                img.onerror = loadFailed;
+                tryNextSource();
+            }
+
+            // 开始游戏
+            function startGameWithImage() {
+                gameStarted = true;
+                correctCount = 0;
+                selectedPiece = null;
+                seconds = 0;
+                timerElement.textContent = '00:00';
+                currentDifficulty.textContent = rows + '×' + cols;
+                gameInfo.style.display = 'flex';
+
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = setInterval(updateTimer, 1000);
+
+                createPuzzle();
+                shufflePieces();
+                renderPuzzle();
+            }
+
+            // 创建拼图
+            function createPuzzle() {
+                pieces = [];
+                for (var r = 0; r < rows; r++) {
+                    for (var c = 0; c < cols; c++) {
+                        pieces.push({
+                            originalRow: r,
+                            originalCol: c,
+                            currentRow: r,
+                            currentCol: c,
+                            correct: true
+                        });
+                    }
+                }
+            }
+
+            // 打乱拼图
+            function shufflePieces() {
+                do {
+                    for (var i = pieces.length - 1; i > 0; i--) {
+                        var j = Math.floor(Math.random() * (i + 1));
+                        var temp = pieces[i];
+                        pieces[i] = pieces[j];
+                        pieces[j] = temp;
+                    }
+
+                    for (var i = 0; i < pieces.length; i++) {
+                        var r = Math.floor(i / cols);
+                        var c = i % cols;
+                        pieces[i].currentRow = r;
+                        pieces[i].currentCol = c;
+                    }
+                } while (isAllCorrect());
+
+                updateCorrectStatus();
+            }
+
+            // 检查是否全部正确
+            function isAllCorrect() {
+                for (var i = 0; i < pieces.length; i++) {
+                    if (pieces[i].originalRow !== pieces[i].currentRow || pieces[i].originalCol !== pieces[i].currentCol) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            // 更新正确状态
+            function updateCorrectStatus() {
+                correctCount = 0;
+                for (var i = 0; i < pieces.length; i++) {
+                    pieces[i].correct = (pieces[i].originalRow === pieces[i].currentRow && 
+                                       pieces[i].originalCol === pieces[i].currentCol);
+                    if (pieces[i].correct) correctCount++;
+                }
+            }
+
+            // 渲染拼图
+            function renderPuzzle() {
+                puzzleGrid.innerHTML = '';
+                puzzleGrid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+                puzzleGrid.style.gridTemplateRows = 'repeat(' + rows + ', 1fr)';
+
+                var maxWidth = 500;
+                var maxHeight = 500;
+                var aspectRatio = image.width / image.height;
+                var gridWidth, gridHeight;
+
+                if (aspectRatio > 1) {
+                    gridWidth = Math.min(maxWidth, image.width);
+                    gridHeight = gridWidth / aspectRatio;
+                } else {
+                    gridHeight = Math.min(maxHeight, image.height);
+                    gridWidth = gridHeight * aspectRatio;
+                }
+
+                puzzleGrid.style.width = gridWidth + 'px';
+                puzzleGrid.style.height = gridHeight + 'px';
+
+                for (var i = 0; i < pieces.length; i++) {
+                    var div = document.createElement('div');
+                    div.className = 'puzzle-piece';
+                    if (pieces[i].correct) {
+                        div.className += ' correct';
+                    }
+                    div.dataset.index = i;
+
+                    div.style.backgroundImage = 'url(\'' + imageSrc + '\')';
+                    div.style.backgroundSize = gridWidth + 'px ' + gridHeight + 'px';
+                    div.style.backgroundPosition = '-' + (pieces[i].originalCol * (gridWidth / cols)) + 'px -' + (pieces[i].originalRow * (gridHeight / rows)) + 'px';
+                    div.style.backgroundRepeat = 'no-repeat';
+
+                    div.addEventListener('click', (function(index) {
+                        return function() {
+                            handlePieceClick(index);
+                        };
+                    })(i));
+
+                    puzzleGrid.appendChild(div);
+                }
+            }
+
+            // 处理拼图点击
+            function handlePieceClick(index) {
+                if (!gameStarted) return;
+
+                var pieceElements = document.querySelectorAll('.puzzle-piece');
+
+                if (selectedPiece === null) {
+                    selectedPiece = index;
+                    pieceElements[index].className += ' selected';
+                } else if (selectedPiece === index) {
+                    pieceElements[index].className = pieceElements[index].className.replace(' selected', '');
+                    selectedPiece = null;
+                } else {
+                    var temp = pieces[selectedPiece];
+                    pieces[selectedPiece] = pieces[index];
+                    pieces[index] = temp;
+
+                    for (var i = 0; i < pieces.length; i++) {
+                        pieces[i].currentRow = Math.floor(i / cols);
+                        pieces[i].currentCol = i % cols;
+                    }
+
+                    updateCorrectStatus();
+                    renderPuzzle();
+                    selectedPiece = null;
+
+                    if (isAllCorrect()) {
+                        gameComplete();
+                    }
+                }
+            }
+
+            // 更新计时器
+            function updateTimer() {
+                seconds++;
+                var mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                var secs = (seconds % 60).toString().padStart(2, '0');
+                timerElement.textContent = mins + ':' + secs;
+            }
+
+            // 游戏完成
+            function gameComplete() {
+                gameStarted = false;
+                clearInterval(timerInterval);
+
+                shareDifficulty.textContent = rows + '×' + cols;
+                shareTime.textContent = timerElement.textContent;
+                shareImg.src = image.src;
+
+                modal.className = 'modal active';
+            }
+
+            // 下载图片
+            downloadImgBtn.addEventListener('click', function() {
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                canvas.width = 600;
+                canvas.height = 900;
+
+                var gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, '#667eea');
+                gradient.addColorStop(1, '#764ba2');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = 'white';
+                ctx.fillRect(50, 50, 500, 800);
+
+                ctx.fillStyle = '#667eea';
+                ctx.font = 'bold 36px Microsoft YaHei, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('🎉 恭喜完成拼图！', 300, 120);
+
+                ctx.fillStyle = '#333';
+                ctx.font = '24px Microsoft YaHei, sans-serif';
+                ctx.fillText('难度: ' + rows + '×' + cols, 300, 180);
+                ctx.fillText('完成时间: ' + timerElement.textContent, 300, 220);
+
+                var drawShareCard = function(imgSrc) {
+                    var img = new Image();
+                    img.onload = function() {
+                        var imgSize = 350;
+                        var imgX = (canvas.width - imgSize) / 2;
+                        var imgY = 260;
+
+                        ctx.fillStyle = '#f0f0f0';
+                        ctx.fillRect(imgX - 10, imgY - 10, imgSize + 20, imgSize + 20);
+
+                        ctx.drawImage(img, imgX, imgY, imgSize, imgSize);
+
+                        ctx.fillStyle = '#666';
+                        ctx.font = '18px Microsoft YaHei, sans-serif';
+                        ctx.fillText('保存图片后可分享至微信', 300, 680);
+
+                        ctx.fillStyle = '#667eea';
+                        ctx.font = 'bold 20px Microsoft YaHei, sans-serif';
+                        ctx.fillText('拼图小游戏', 300, 780);
+
+                        var link = document.createElement('a');
+                        link.download = '拼图完成.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                    };
+                    img.onerror = function() {
+                        ctx.fillStyle = '#666';
+                        ctx.font = '18px Microsoft YaHei, sans-serif';
+                        ctx.fillText('拼图图片', 300, 450);
+
+                        ctx.fillStyle = '#666';
+                        ctx.font = '18px Microsoft YaHei, sans-serif';
+                        ctx.fillText('保存图片后可分享至微信', 300, 680);
+
+                        ctx.fillStyle = '#667eea';
+                        ctx.font = 'bold 20px Microsoft YaHei, sans-serif';
+                        ctx.fillText('拼图小游戏', 300, 780);
+
+                        var link = document.createElement('a');
+                        link.download = '拼图完成.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                    };
+                    img.src = imgSrc;
+                };
+
+                if (imageSrc.indexOf('data:') === 0) {
+                    drawShareCard(imageSrc);
+                } else {
+                    var tempCanvas = document.createElement('canvas');
+                    var tempCtx = tempCanvas.getContext('2d');
+                    tempCanvas.width = 600;
+                    tempCanvas.height = 600;
+
+                    var tempImg = new Image();
+                    tempImg.crossOrigin = 'anonymous';
+                    tempImg.onload = function() {
+                        tempCtx.drawImage(tempImg, 0, 0, 600, 600);
+                        drawShareCard(tempCanvas.toDataURL('image/png'));
+                    };
+                    tempImg.onerror = function() {
+                        drawShareCard(previewImg.src);
+                    };
+                    tempImg.src = imageSrc;
+                }
+            });
+
+            // 再来一局
+            restartBtn.addEventListener('click', function() {
+                modal.className = 'modal';
+                if (imageSourceRadios[0].checked) {
+                    generateRandomImage(startGameWithImage);
+                } else {
+                    startGameWithImage();
+                }
+            });
+        }
+
+        // 页面加载完成后初始化
+        window.onload = function() {
+            init();
+        };
+    </script>
+</body>
+</html>
